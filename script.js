@@ -3,42 +3,57 @@ let mediaRecorder;
 let audioChunks = [];
 
 async function startRecording() {
-  // Start recording
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: true,
-  });
-  mediaRecorder = new MediaRecorder(stream);
+  try {
+    // Check if microphone permission is granted
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+    });
 
-  mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) {
-      audioChunks.push(event.data);
-    }
-  };
+    // Start recording
+    mediaRecorder = new MediaRecorder(stream);
 
-  mediaRecorder.onstop = () => {
-    const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-    const audioUrl = URL.createObjectURL(audioBlob);
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunks.push(event.data);
+      } else {
+        alert(
+          "Looks like that the browser is unable to capture your audio :(."
+        );
+      }
+    };
 
-    const a = document.createElement("a");
-    document.body.appendChild(a);
-    a.style = "display: none";
-    a.href = audioUrl;
-    a.download = "recorded_audio.wav";
-    a.click();
+    mediaRecorder.onstop = () => {
+      const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+      const audioUrl = URL.createObjectURL(audioBlob);
 
-    // Clean up
-    audioChunks = [];
-    URL.revokeObjectURL(audioUrl);
+      const a = document.createElement("a");
+      document.body.appendChild(a);
+      a.style = "display: none";
+      a.href = audioUrl;
+      a.download = "recorded_audio.wav";
+      a.click();
 
-    // Reset button text
+      // Clean up
+      audioChunks = [];
+      URL.revokeObjectURL(audioUrl);
+
+      // Reset button text
+      document.getElementById("recordButton").innerText = "Record";
+    };
+
+    document.getElementById("recordButton").innerText = "Recording!";
+
+    mediaRecorder.start();
+    isRecording = true;
+  } catch (error) {
+    // Handle microphone permission error
+    console.error("Error accessing microphone:", error);
+
+    alert("Please enable microphone access to use this feature.");
+
+    // Reset button text in case of permission denial
     document.getElementById("recordButton").innerText = "Record";
-  };
-
-  mediaRecorder.start();
-  isRecording = true;
-
-  // Update button text when recording starts
-  document.getElementById("recordButton").innerText = "Recording!";
+  }
 }
 
 function stopRecording() {
